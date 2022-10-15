@@ -61,9 +61,13 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-const displayMovement = function (movement) {
+const displayMovements = function (movements, sort = false) {
   containerMovements.innerHTML = '';
-  movement.forEach(function (mov, i) {
+
+  //We make a copy of the arr using splice and use the copy to sort the arr to avoid mutating the og. If the sort parameter of the function is true it will sort it, if its false it will simply equal to movements (un-sorted)
+  const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+
+  movs.forEach(function (mov, i) {
     const type = mov > 0 ? `deposit` : `withdrawal`;
     const html = `
     <div class="movements__row">
@@ -115,7 +119,7 @@ console.log(accounts);
 
 const updateUi = acc => {
   //Display movements
-  displayMovement(acc.movements);
+  displayMovements(acc.movements);
   //Display balance
   calcDisplayBalance(acc);
   //Display summary
@@ -148,6 +152,8 @@ btnLogin.addEventListener(`click`, function (e) {
   }
 });
 
+//Adding Transfers
+
 btnTransfer.addEventListener(`click`, function (e) {
   e.preventDefault();
   const amount = Number(inputTransferAmount.value);
@@ -168,6 +174,52 @@ btnTransfer.addEventListener(`click`, function (e) {
     updateUi(currentAccount);
   }
 });
+
+// Load Feature
+btnLoan.addEventListener(`click`, function (e) {
+  e.preventDefault();
+
+  const amount = Number(inputLoanAmount.value);
+
+  if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
+    //Add movement
+    currentAccount.movements.push(amount);
+
+    //Update UI
+    updateUi(currentAccount);
+  }
+  inputLoanAmount.value = ``;
+});
+
+// The findIndex Method
+// Deleting an account
+btnClose.addEventListener(`click`, function (e) {
+  e.preventDefault();
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    const index = accounts.findIndex(
+      acc => acc.username === currentAccount.username
+    );
+
+    //Delete acc
+    accounts.slice(index, 1);
+
+    //Hide UI
+    containerApp.style.opacity = 0;
+  }
+  inputCloseUsername.value = inputClosePin.value = ``;
+});
+
+let sorted = false;
+btnSort.addEventListener(`click`, function (e) {
+  e.preventDefault();
+  // we set the sort parameter to true/false whenever the sort btn is clicked
+  displayMovements(currentAccount.movements, !sorted);
+  sorted = !sorted;
+});
+
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -311,3 +363,85 @@ console.log(firstWithdrawal);
 console.log(accounts);
 const account = accounts.find(acc => acc.owner === `Jessica Davis`);
 console.log(account);
+
+//////
+// some and every Methods
+// some
+console.log(movements); //[200, 450, -400, 3000, -650, -130, 70, 1300]
+console.log(movements.includes(-130)); // true
+
+const anyDeposits = movements.some(mov => mov > 0);
+console.log();
+anyDeposits; // true
+
+// every
+console.log(movements.every(mov => mov > 0)); // false
+console.log(account4.movements.every(mov => mov > 0)); //true since it only has deposits
+
+// Separate callback
+const deposit = mov => mov > 0;
+console.log(movements.some(deposit));
+console.log(movements.every(deposit));
+console.log(movements.filter(deposit));
+
+// Flat and FlatMap Methods
+
+const arr = [[1, 2, 3], [4, 5, 6], 7, 8]; // What if we wanna out all the numbers into just one arr?
+console.log(arr.flat()); //[1, 2, 3, 4, 5, 6, 7, 8]
+
+const arrDeep = [[[1, 2], 3], [4, [5, 6]], 7, 8];
+console.log(arrDeep.flat()); //[[1, 2], 3, 4, [5, 6], 7, 8] only flattens it 1 level deep
+console.log(arrDeep.flat(2)); //[1, 2, 3, 4, 5, 6, 7, 8] goes 2 levels deep (default is 1)
+
+const accountMovements = accounts.map(acc => acc.movements);
+console.log(accountMovements); //[Array(8), Array(8), Array(8), Array(5)]
+const allMovements = accountMovements.flat();
+console.log(allMovements); //[200, 450, -400, 3000, -650, -130, 70, 1300, 5000, 3400, -150, -790, -3210, -1000, 8500, -30, 200, -200, 340, -300, -20, 50, 400, -460, 430, 1000, 700, 50, 90]
+
+const overalBalance = allMovements.reduce((acc, mov) => acc + mov, 0);
+console.log(overalBalance); // 17840
+
+// OR we can use chaining to make it a lot nicer
+const overalBalance2 = accounts
+  .map(acc => acc.movements)
+  .flat()
+  .reduce((acc, mov) => acc + mov, 0);
+console.log(overalBalance2); //17840
+
+// OR we can also use flatMap
+const overalBalance3 = accounts
+  .flatMap(acc => acc.movements)
+  .reduce((acc, mov) => acc + mov, 0);
+console.log(overalBalance3);
+
+///////////////////
+// Sorting Arrays
+
+// Strings
+const owners = [`Jonas`, `Zack`, `Adam`, `Martha`];
+console.log(owners.sort()); // ['Adam', 'Jonas', 'Martha', 'Zack'] (Mutates the original array)
+
+//Numbers
+console.log(movements); //[200, 450, -400, 3000, -650, -130, 70, 1300]
+console.log(movements.sort()); //[-130, -400, -650, 1300, 200, 3000, 450, 70] since it sorts them as strings we get an unordered array
+
+// if it returna < 0   a, b (keep order)
+// if it returns > 0   b, a (switch order)
+
+//Ascending
+movements.sort((a, b) => {
+  if (a > b) return 1;
+  if (a < b) return -1;
+});
+console.log(movements); // [-650, -400, -130, 70, 200, 450, 1300, 3000]
+//OR to simplifly it
+movements.sort((a, b) => a - b);
+
+//Descending
+movements.sort((a, b) => {
+  if (a > b) return -1;
+  if (a < b) return 1;
+});
+console.log(movements); //[3000, 1300, 450, 200, 70, -130, -400, -650]
+// OR
+movements.sort((a, b) => b - a);
